@@ -64,9 +64,9 @@ class Animal_Farm_Sales {
         ?>
         <div class="animal-farm-sales-container">
             <div class="product-selector-wrapper">
-                <label for="product-selector"><?php _e('Select Product:', 'animal-farm-sales'); ?></label>
+                <label for="product-selector"><?php _e('Select Performance:', 'animal-farm-sales'); ?></label>
                 <select id="product-selector" class="product-selector">
-                    <option value=""><?php _e('-- Select a Product --', 'animal-farm-sales'); ?></option>
+                    <option value=""><?php _e('-- Select a Performance --', 'animal-farm-sales'); ?></option>
                     <?php echo $this->get_products_dropdown_options($atts['products']); ?>
                 </select>
             </div>
