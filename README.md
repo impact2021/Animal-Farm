@@ -8,7 +8,7 @@ This plugin provides a shortcode `[sales_table]` that displays WooCommerce order
 
 ## Features
 
-- Product dropdown selector
+- Performance dropdown selector
 - Sales data table with:
   - Customer name (first name + last name)
   - Quantity purchased
