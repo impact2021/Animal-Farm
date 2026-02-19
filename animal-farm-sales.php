@@ -38,7 +38,10 @@ class Animal_Farm_Sales {
      * Enqueue scripts and styles
      */
     public function enqueue_scripts() {
-        if (!is_admin()) {
+        global $post;
+        
+        // Only enqueue if the shortcode is present on the page
+        if (!is_admin() && is_a($post, 'WP_Post') && has_shortcode($post->post_content, 'sales_table')) {
             wp_enqueue_style('animal-farm-sales-css', plugin_dir_url(__FILE__) . 'assets/css/sales-table.css', array(), '1.0.0');
             wp_enqueue_script('animal-farm-sales-js', plugin_dir_url(__FILE__) . 'assets/js/sales-table.js', array('jquery'), '1.0.0', true);
             
@@ -102,7 +105,7 @@ class Animal_Farm_Sales {
     private function get_products_dropdown_options($product_ids = '') {
         $args = array(
             'post_type' => 'product',
-            'posts_per_page' => -1,
+            'posts_per_page' => 500, // Limit to 500 products for performance
             'orderby' => 'title',
             'order' => 'ASC',
             'post_status' => 'publish'
@@ -112,6 +115,7 @@ class Animal_Farm_Sales {
         if (!empty($product_ids)) {
             $ids = array_map('trim', explode(',', $product_ids));
             $args['post__in'] = $ids;
+            $args['posts_per_page'] = -1; // Allow all specified products
         }
         
         $products = get_posts($args);
@@ -153,20 +157,31 @@ class Animal_Farm_Sales {
         
         $orders_data = array();
         
-        // Query to get all orders that contain the product
-        $order_ids = $wpdb->get_col($wpdb->prepare("
+        // Valid order statuses to include (exclude trash, draft, auto-draft)
+        $valid_statuses = array('wc-pending', 'wc-processing', 'wc-on-hold', 'wc-completed', 'wc-cancelled', 'wc-refunded', 'wc-failed');
+        $status_placeholders = implode(',', array_fill(0, count($valid_statuses), '%s'));
+        
+        // Query to get orders that contain the product with status filtering and limit
+        $query = $wpdb->prepare("
             SELECT DISTINCT order_items.order_id
             FROM {$wpdb->prefix}woocommerce_order_items as order_items
             LEFT JOIN {$wpdb->prefix}woocommerce_order_itemmeta as order_item_meta ON order_items.order_item_id = order_item_meta.order_item_id
+            LEFT JOIN {$wpdb->prefix}posts as posts ON order_items.order_id = posts.ID
             WHERE order_items.order_item_type = 'line_item'
             AND order_item_meta.meta_key = '_product_id'
             AND order_item_meta.meta_value = %d
-        ", $product_id));
+            AND posts.post_status IN ({$status_placeholders})
+            ORDER BY posts.post_date DESC
+            LIMIT 1000
+        ", array_merge(array($product_id), $valid_statuses));
+        
+        $order_ids = $wpdb->get_col($query);
         
         if (empty($order_ids)) {
             return $orders_data;
         }
         
+        // Use WooCommerce data store for bulk loading
         foreach ($order_ids as $order_id) {
             $order = wc_get_order($order_id);
             

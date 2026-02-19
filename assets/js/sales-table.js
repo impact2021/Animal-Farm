@@ -44,7 +44,7 @@
                 },
                 error: function(xhr, status, error) {
                     $('.loading-message').hide();
-                    $('.no-orders-message').html('Error loading orders. Please try again.').show();
+                    $('.no-orders-message').text('Error loading orders. Please try again.').show();
                     console.error('AJAX Error:', error);
                 }
             });
